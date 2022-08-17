@@ -24,7 +24,6 @@ contract GenStaking {
     event Stake(address indexed from, uint256 amount);
     event Unstake(address indexed from, uint256 amount);
     event YieldWithdraw(address indexed to, uint256 amount);
-    event ConvertGenToStGen(address indexed from, uint256 amount);
 
     address public manager;
 
@@ -208,19 +207,13 @@ contract GenStaking {
         return totalStaked;
     }
 
-    function convertGenToStGen(uint256 amount) public {
-        // 100:1 = GEN:stGEN
-        require(
-            amount > 0 &&
-            genToken.balanceOf(msg.sender) >= amount, 
-            "You cannot convert zero tokens");
-            
-        // GEN 이동
-        genToken.transferFrom(msg.sender, address(this), amount);
-        // stGEN 이동
-        uint256 stGenAmount = SafeMath.div(amount, 100);
-        stGenToken.safeTransfer(msg.sender, stGenAmount);
-        emit ConvertGenToStGen(msg.sender, amount);
+    function withdrawToken(address _token, address receiver, uint amount) public isManager {
+        IERC20(_token).safeTransfer(receiver, amount);
+    }
+
+    function withdrawETH() public isManager returns(bool) {
+        payable(msg.sender).transfer(address(this).balance);
+        return true;
     }
 
 
