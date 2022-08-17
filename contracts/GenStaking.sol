@@ -13,6 +13,8 @@ contract GenStaking {
 
     string public name = "Gen Staking";
 
+    uint256 epochTotalReward;
+
     // IERC20 public daiToken;
     // CoffeeToken public coffeeToken;
 
@@ -23,14 +25,16 @@ contract GenStaking {
     event Unstake(address indexed from, uint256 amount);
     event YieldWithdraw(address indexed to, uint256 amount);
 
+    address public manager;
+
     constructor(
-        // IERC20 _daiToken,
-        // CoffeeToken _coffeeToken
         IERC20 _stGenToken,
         IERC20 _genToken
         ) {
             stGenToken = _stGenToken;
             genToken = _genToken;
+
+            manager = msg.sender;
         }
 
     // TODO: safemath로 바꾸기   
@@ -39,6 +43,33 @@ contract GenStaking {
     // mulResult = SafeMath.mul(a,b);
     // divResult = SafeMath.div(a,b);
     // modResult = SafeMath.mod(a,b);
+
+    function version() public pure returns (string memory) {
+        return "0.0.1";
+    }
+
+    // event for EVM logging
+    event ManagerSet(address indexed oldManager, address indexed newManager);
+
+    // modifier to check if caller is manager
+    modifier isManager() {
+        // If the first argument of 'require' evaluates to 'false', execution terminates and all
+        // changes to the state and to Ether balances are reverted.
+        // This used to consume all gas in old EVM versions, but not anymore.
+        // It is often a good idea to use 'require' to check if functions are called correctly.
+        // As a second argument, you can also provide an explanation about what went wrong.
+        require(msg.sender == manager, "Caller is not manager");
+        _;
+    }
+    
+    function changeManager(address newManager) public isManager {
+        emit ManagerSet(manager, newManager);
+        manager = newManager;
+    }
+
+    function getManager() external view returns (address) {
+        return manager;
+    }
 
     receive() external payable {}
 
@@ -89,25 +120,64 @@ contract GenStaking {
         uint256 time = calculateYieldTime(user) * 10**18;
         uint256 rate = 86400;
         uint256 timeRate = time / rate;
-        uint256 rawYield = (stakingBalance[user] * timeRate) / 10**18;
+        // uint256 rawYield = (stakingBalance[user] * timeRate) / 10**18;
 
         // 리워드 계산(현재 epoch 에 할당된 총 리워드에서 (유저 staked)/(총 staked) 로 비율 계산한다(Epoch는 7일 단위).
-        // stGenToken.balanceOf(address(this))
+        // stGenToken.balanceOf(address(this)) -> 이걸 epochTotalReward 숫자로 표현
+
+        uint256 totalStaked = stGenToken.balanceOf(address(this));
+
+        // addResult = SafeMath.add(a,b);
+        // subResult = SafeMath.sub(a,b);
+        // mulResult = SafeMath.mul(a,b);
+        // divResult = SafeMath.div(a,b);
+        // modResult = SafeMath.mod(a,b);
+
+        uint256 rawYield = epochTotalReward * timeRate * ( stakingBalance[user] / totalStaked ) / 10**18;
+
+        // 428240740740740000
+        // 1192129629629629000
         
-
-
-
+        
 
         return rawYield;
     } 
 
-    function withdrawYield() public {
+    function getMyRewards(address user) public view returns(uint256) {
+        uint256 toTransfer = calculateYieldTotal(user);
+
+        require(
+            toTransfer > 0 ||
+            rewardBalance[user] > 0,
+            "Nothing to claim"
+            );
+            
+        // if(rewardBalance[user] != 0){
+        //     uint256 oldBalance = rewardBalance[user];
+        //     rewardBalance[user] = 0;
+        //     toTransfer += oldBalance;
+        // }
+
+        // startTime[user] = block.timestamp;
+        // coffeeToken.mint(user, toTransfer);
+        // TODO: GEN Token Transfer
+        // genToken.safeTransfer(user, toTransfer);
+        // emit YieldWithdraw(user, toTransfer);
+
+        uint256 oldBalance = rewardBalance[user];
+        toTransfer += oldBalance;
+        
+        return toTransfer;
+    }
+
+    // withdrawYield
+    function claimYield() public {
         uint256 toTransfer = calculateYieldTotal(msg.sender);
 
         require(
             toTransfer > 0 ||
             rewardBalance[msg.sender] > 0,
-            "Nothing to withdraw"
+            "Nothing to claim"
             );
             
         if(rewardBalance[msg.sender] != 0){
@@ -133,43 +203,12 @@ contract GenStaking {
         return balance;
     }
 
-    // address public manager;
-    // mapping(string => string) public requestedDatas;
+    function setEpochTotalReward (uint256 amount) public isManager {
+        epochTotalReward = amount;
+    }
 
-    // receive() external payable {}
-
-    // constructor() { manager = msg.sender; }
-
-    // function version() public pure returns (string memory) {
-    //     return "0.0.1";
-    // }
-
-    // function name() public pure returns (string memory) {
-    //     return "Gen Contract";
-    // }
-
-    // // event for EVM logging
-    // event ManagerSet(address indexed oldManager, address indexed newManager);
-
-    // // modifier to check if caller is manager
-    // modifier isManager() {
-    //     // If the first argument of 'require' evaluates to 'false', execution terminates and all
-    //     // changes to the state and to Ether balances are reverted.
-    //     // This used to consume all gas in old EVM versions, but not anymore.
-    //     // It is often a good idea to use 'require' to check if functions are called correctly.
-    //     // As a second argument, you can also provide an explanation about what went wrong.
-    //     require(msg.sender == manager, "Caller is not manager");
-    //     _;
-    // }
+    // 428240740740740000
     
-    // function changeManager(address newManager) public isManager {
-    //     emit ManagerSet(manager, newManager);
-    //     manager = newManager;
-    // }
-
-    // function getManager() external view returns (address) {
-    //     return manager;
-    // }
 
     // function addDataUidAndIpfsHash(string memory dataUid, string memory ipfsHash) public isManager {
     //     requestedDatas[dataUid] = ipfsHash;
