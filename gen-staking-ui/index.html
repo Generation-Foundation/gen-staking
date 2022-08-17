@@ -1,0 +1,83 @@
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.ethers.io/lib/ethers-5.2.umd.min.js" type="application/javascript"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
+    <style>
+        body {
+            margin: 20px;
+        }
+
+        .jq-toast-wrap.top-right {
+            margin-right: 40px !important;
+        }
+
+        hr {
+            border-top: 1px solid rgb(224, 224, 224);
+        }
+
+        .connected {
+            display: none;
+            color: green;
+            font-weight: 700;
+        }
+    </style>
+    <script src="lib/jquery.toast.min.js" type="application/javascript"></script>
+    <link rel="stylesheet" type="text/css" href="lib/jquery.toast.min.css">
+
+    
+    <script src="https://cdn.jsdelivr.net/npm/gasparesganga-jquery-loading-overlay@2.1.7/dist/loadingoverlay.min.js" type="application/javascript"></script>
+</head>
+<body>
+    <h1>GEN Staking Test <h5>1 GEN = $ <span class="genPrice">-</span></h5></h1>
+    <a class="metamaskBtn" href="javascript:init();"><img src="images/metamask.png" width="259" /></a>
+    <p class="connected">Connected!</p>
+    <p>
+        My Address: <span class="myAddress"></span><br />
+        My ETH: <span class="ethBalance">0</span>
+    </p>
+    <hr />
+    <!-- Dashboard -->
+    <h3>Dashboard</h3>
+    <p>
+        Current Epoch Reward: <span class="currentEpochReward">0</span> GEN<br />
+        Total Staked stGEN: <span class="totalStakedStGen">0</span><br />
+        APR: <span class="apr">0</span>%<br />
+        APY: <span class="apy">0</span>%<br />
+    </p>
+
+    <!-- Burn: GEN -> (Burn) -> stGEN -->
+    <div>
+        <h3>GEN -> stGEN(100:1)</h3>
+        <p>
+            My GEN: <span class="myGenBalance">0</span><br />
+            My stGEN: <span class="myStGenBalance">0</span>
+        </p>
+        <input class="burningGenAmount" type="number" value="0" />
+        <button onclick="burn()">Burn</button>
+    </div>
+    <hr />
+
+    <!-- Stake -->
+    <div>
+        <h3>stGEN Staking</h3>
+        <p>
+            My staked stGEN: <span class="myStakedStGen">0</span><br />
+            My stGEN: <span class="myStGenBalance">0</span>
+        </p>
+        <input class="stGenInput" type="number" value="0" />
+        <button onclick="stake()">Stake</button>
+        <button onclick="unstake()">Unstake</button>
+
+        <br />
+        <p>
+            Unclaimed rewards: <span class="myRewards">0</span><br />
+            <button onclick="claim()">Claim</button>
+        </p>
+        
+    </div>
+
+    <script src="main.js"></script>
+</body>
+</html>
