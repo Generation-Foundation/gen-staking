@@ -24,6 +24,7 @@ contract GenStaking {
     event Stake(address indexed from, uint256 amount);
     event Unstake(address indexed from, uint256 amount);
     event YieldWithdraw(address indexed to, uint256 amount);
+    event ConvertGenToStGen(address indexed from, uint256 amount);
 
     address public manager;
 
@@ -214,27 +215,13 @@ contract GenStaking {
             genToken.balanceOf(msg.sender) >= amount, 
             "You cannot convert zero tokens");
             
-        if(isStaking[msg.sender] == true){
-            uint256 toTransfer = calculateYieldTotal(msg.sender);
-            rewardBalance[msg.sender] += toTransfer;
-        }
-        
-        stGenToken.transferFrom(msg.sender, address(this), amount);
-        stakingBalance[msg.sender] += amount;
-        startTime[msg.sender] = block.timestamp;
-        isStaking[msg.sender] = true;
-        emit Stake(msg.sender, amount);
+        // GEN 이동
+        genToken.transferFrom(msg.sender, address(this), amount);
+        // stGEN 이동
+        uint256 stGenAmount = SafeMath.div(amount, 100);
+        stGenToken.safeTransfer(msg.sender, stGenAmount);
+        emit ConvertGenToStGen(msg.sender, amount);
     }
-
-
-
-
-
-
-
-
-
-
 
 
     // stakingBalance[user]
