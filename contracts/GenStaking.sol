@@ -13,7 +13,7 @@ contract GenStaking {
 
     string public name = "Gen Staking";
 
-    uint256 epochTotalReward;
+    uint256 public epochTotalReward;
 
     // IERC20 public daiToken;
     // CoffeeToken public coffeeToken;
@@ -98,6 +98,9 @@ contract GenStaking {
             "Nothing to unstake"
         );
         uint256 yieldTransfer = calculateYieldTotal(msg.sender);
+
+        // TODO: 7일간 pending 상태였다가 7일 후에 처리되어야함
+        
         startTime[msg.sender] = block.timestamp;
         uint256 balTransfer = amount;
         amount = 0;
@@ -118,7 +121,7 @@ contract GenStaking {
 
     function calculateYieldTotal(address user) public view returns(uint256) {
         uint256 time = calculateYieldTime(user) * 10**18;
-        uint256 rate = 86400;
+        uint256 rate = 86400 * 7;
         uint256 timeRate = time / rate;
         // uint256 rawYield = (stakingBalance[user] * timeRate) / 10**18;
 
@@ -133,7 +136,7 @@ contract GenStaking {
         // divResult = SafeMath.div(a,b);
         // modResult = SafeMath.mod(a,b);
 
-        uint256 rawYield = epochTotalReward * timeRate * ( stakingBalance[user] / totalStaked ) / 10**18;
+        uint256 rawYield = epochTotalReward * ( stakingBalance[user] / totalStaked ) * timeRate / 10**18;
 
         // 428240740740740000
         // 1192129629629629000
@@ -146,23 +149,11 @@ contract GenStaking {
     function getMyRewards(address user) public view returns(uint256) {
         uint256 toTransfer = calculateYieldTotal(user);
 
-        require(
-            toTransfer > 0 ||
-            rewardBalance[user] > 0,
-            "Nothing to claim"
-            );
-            
-        // if(rewardBalance[user] != 0){
-        //     uint256 oldBalance = rewardBalance[user];
-        //     rewardBalance[user] = 0;
-        //     toTransfer += oldBalance;
-        // }
-
-        // startTime[user] = block.timestamp;
-        // coffeeToken.mint(user, toTransfer);
-        // TODO: GEN Token Transfer
-        // genToken.safeTransfer(user, toTransfer);
-        // emit YieldWithdraw(user, toTransfer);
+        // require(
+        //     toTransfer > 0 ||
+        //     rewardBalance[user] > 0,
+        //     "Nothing to claim"
+        //     );
 
         uint256 oldBalance = rewardBalance[user];
         toTransfer += oldBalance;
@@ -206,6 +197,48 @@ contract GenStaking {
     function setEpochTotalReward (uint256 amount) public isManager {
         epochTotalReward = amount;
     }
+
+    function getEpochTotalReward() public view returns (uint256) {
+        return epochTotalReward;
+    }
+
+    function getTotalStaked() public view returns (uint256) {
+        uint256 totalStaked = stGenToken.balanceOf(address(this));
+        return totalStaked;
+    }
+
+    function convertGenToStGen(uint256 amount) public {
+        // 100:1 = GEN:stGEN
+        require(
+            amount > 0 &&
+            genToken.balanceOf(msg.sender) >= amount, 
+            "You cannot convert zero tokens");
+            
+        if(isStaking[msg.sender] == true){
+            uint256 toTransfer = calculateYieldTotal(msg.sender);
+            rewardBalance[msg.sender] += toTransfer;
+        }
+        
+        stGenToken.transferFrom(msg.sender, address(this), amount);
+        stakingBalance[msg.sender] += amount;
+        startTime[msg.sender] = block.timestamp;
+        isStaking[msg.sender] = true;
+        emit Stake(msg.sender, amount);
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+    // stakingBalance[user]
+    
 
     // 428240740740740000
     
