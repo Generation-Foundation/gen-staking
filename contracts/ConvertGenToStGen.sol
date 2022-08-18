@@ -69,6 +69,7 @@ contract ConvertGenToStGen {
             "You cannot convert zero tokens");
             
         // GEN 이동
+        // TODO: burn 주소로 이동해야함
         genToken.transferFrom(msg.sender, address(this), amount);
         // stGEN 이동
         uint256 stGenAmount = SafeMath.div(amount, 100);
