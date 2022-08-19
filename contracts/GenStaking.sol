@@ -27,10 +27,6 @@ contract GenStaking2 {
     IERC20 public stGenToken;
     IERC20 public genToken;
 
-    event Stake(address indexed from, uint256 amount);
-    event Unstake(address indexed from, uint256 amount);
-    event YieldWithdraw(address indexed to, uint256 amount);
-
     address public manager;
 
     constructor(
@@ -203,7 +199,7 @@ contract GenStaking2 {
         // coffeeToken.mint(msg.sender, toTransfer);
         // TODO: GEN Token Transfer
         genToken.safeTransfer(msg.sender, toTransfer);
-        emit YieldWithdraw(msg.sender, toTransfer);
+        emit YieldClaim(msg.sender, toTransfer);
     }
 
     function getThisAddressGenTokenBalance() public view returns (uint256) {
@@ -218,6 +214,7 @@ contract GenStaking2 {
 
     function setEpochTotalReward (uint256 amount) public isManager {
         epochTotalReward = amount;
+        emit EpochUpdated(amount);
     }
 
     function getEpochTotalReward() public view returns (uint256) {
@@ -229,40 +226,20 @@ contract GenStaking2 {
         return totalStaked;
     }
 
-    function withdrawToken(address _token, address receiver, uint amount) public isManager {
-        IERC20(_token).safeTransfer(receiver, amount);
+    function recoverERC20(address token, uint amount) public isManager {
+        require(token != address(stGenToken), "Cannot withdraw the staking token");
+        IERC20(token).safeTransfer(msg.sender, amount);
+        emit Recovered(token, amount);
     }
 
-    function withdrawETH() public isManager returns(bool) {
+    function withdrawETH() public isManager {
         payable(msg.sender).transfer(address(this).balance);
-        return true;
     }
 
-
-    // stakingBalance[user]
-    
-
-    // 428240740740740000
-    
-
-    // function addDataUidAndIpfsHash(string memory dataUid, string memory ipfsHash) public isManager {
-    //     requestedDatas[dataUid] = ipfsHash;
-    // }
-
-    // function getRequestedDataHash(string memory dataUid) external view returns (string memory) {
-    //     return requestedDatas[dataUid];
-    // }
-
-    // function removeDataUidAndIpfsHash(string memory dataUid) public isManager {
-    //     delete requestedDatas[dataUid];
-    // }
-
-    // function transferReward(address _token, address receiver, uint amount) public isManager {
-    //     IERC20(_token).safeTransfer(receiver, amount);
-    // }
-
-    // function withdrawETH() public isManager returns(bool) {
-    //     payable(msg.sender).transfer(address(this).balance);
-    //     return true;
-    // }
+    /* ========== EVENTS ========== */
+    event EpochUpdated(uint256 reward);
+    event Stake(address indexed from, uint256 amount);
+    event Unstake(address indexed from, uint256 amount);
+    event YieldClaim(address indexed to, uint256 amount);
+    event Recovered(address token, uint256 amount);
 }
