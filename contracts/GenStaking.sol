@@ -21,9 +21,6 @@ contract GenStaking2 {
 
     uint256 public epochTotalReward;
 
-    // IERC20 public daiToken;
-    // CoffeeToken public coffeeToken;
-
     IERC20 public stGenToken;
     IERC20 public genToken;
 
@@ -47,11 +44,8 @@ contract GenStaking2 {
     // modResult = SafeMath.mod(a,b);
 
     function version() public pure returns (string memory) {
-        return "0.0.1";
+        return "0.0.2";
     }
-
-    // event for EVM logging
-    event ManagerSet(address indexed oldManager, address indexed newManager);
 
     // modifier to check if caller is manager
     modifier isManager() {
@@ -75,6 +69,15 @@ contract GenStaking2 {
 
     receive() external payable {}
 
+    function setEpochTotalReward (uint256 amount) public isManager {
+        epochTotalReward = amount;
+        emit EpochUpdated(amount);
+    }
+
+    function getEpochTotalReward() public view returns (uint256) {
+        return epochTotalReward;
+    }
+
     function stake(uint256 amount) public {
         require(
             amount > 0 &&
@@ -85,7 +88,6 @@ contract GenStaking2 {
             uint256 toTransfer = calculateYieldTotal(msg.sender);
             rewardBalance[msg.sender] += toTransfer;
         } else {
-            // addressLUT
             addressLUT.push(msg.sender);
         }
 
@@ -133,22 +135,10 @@ contract GenStaking2 {
         uint256 time = calculateYieldTime(user) * 10**18;
         uint256 rate = 86400 * 7;
         uint256 timeRate = time / rate;
-        // uint256 rawYield = (stakingBalance[user] * timeRate) / 10**18;
-
+        
         // 리워드 계산(현재 epoch 에 할당된 총 리워드에서 (유저 staked)/(총 staked) 로 비율 계산한다(Epoch는 7일 단위).
-        // stGenToken.balanceOf(address(this)) -> 이걸 epochTotalReward 숫자로 표현
-
         uint256 totalStaked = stGenToken.balanceOf(address(this));
-        
-        // addResult = SafeMath.add(a,b);
-        // subResult = SafeMath.sub(a,b);
-        // mulResult = SafeMath.mul(a,b);
-        // divResult = SafeMath.div(a,b);
-        // modResult = SafeMath.mod(a,b);
-
-        // uint256 rawYield = epochTotalReward * ( stakingBalance[user] / totalStaked ) * timeRate / 10**18;
         uint256 rawYield = epochTotalReward * ( stakingBalance[user] * 10**18 / totalStaked ) * timeRate / 10**36;
-        
         return rawYield;
     }
 
@@ -166,20 +156,11 @@ contract GenStaking2 {
 
     function getMyRewards(address user) public view returns(uint256) {
         uint256 toTransfer = calculateYieldTotal(user);
-
-        // require(
-        //     toTransfer > 0 ||
-        //     rewardBalance[user] > 0,
-        //     "Nothing to claim"
-        //     );
-
         uint256 oldBalance = rewardBalance[user];
         toTransfer += oldBalance;
-        
         return toTransfer;
     }
 
-    // withdrawYield
     function claimYield() public {
         uint256 toTransfer = calculateYieldTotal(msg.sender);
 
@@ -196,29 +177,13 @@ contract GenStaking2 {
         }
 
         startTime[msg.sender] = block.timestamp;
-        // coffeeToken.mint(msg.sender, toTransfer);
-        // TODO: GEN Token Transfer
         genToken.safeTransfer(msg.sender, toTransfer);
         emit YieldClaim(msg.sender, toTransfer);
     }
 
-    function getThisAddressGenTokenBalance() public view returns (uint256) {
+    function getRemainedReward() public view returns (uint256) {
         uint balance = genToken.balanceOf(address(this));
         return balance;
-    }
-
-    function getThisAddressStGenTokenBalance() public view returns (uint256) {
-        uint balance = stGenToken.balanceOf(address(this));
-        return balance;
-    }
-
-    function setEpochTotalReward (uint256 amount) public isManager {
-        epochTotalReward = amount;
-        emit EpochUpdated(amount);
-    }
-
-    function getEpochTotalReward() public view returns (uint256) {
-        return epochTotalReward;
     }
 
     function getTotalStaked() public view returns (uint256) {
@@ -237,6 +202,7 @@ contract GenStaking2 {
     }
 
     /* ========== EVENTS ========== */
+    event ManagerSet(address indexed oldManager, address indexed newManager);
     event EpochUpdated(uint256 reward);
     event Stake(address indexed from, uint256 amount);
     event Unstake(address indexed from, uint256 amount);
