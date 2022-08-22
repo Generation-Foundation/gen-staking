@@ -92,6 +92,9 @@ contract GenStaking {
     }
 
     function stake(uint256 amount) public {
+        // feverStakingFlag
+        require(feverStakingFlag, "Fever staking is off");
+
         require(
             amount > 0 &&
             stGenToken.balanceOf(msg.sender) >= amount, 
@@ -114,11 +117,14 @@ contract GenStaking {
     }
 
     function unstake(uint256 amount) public {
+        require(amount > 0, "Invalid amount");
+
         require(
             isStaking[msg.sender] = true &&
             stakingBalance[msg.sender] >= amount, 
             "Nothing to unstake"
         );
+
         uint256 yieldTransfer = calculateYieldTotal(msg.sender);
 
         // TODO: 7일간 pending 상태였다가 7일 후에 처리되어야함
