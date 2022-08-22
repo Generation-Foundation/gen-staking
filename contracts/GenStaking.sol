@@ -48,7 +48,7 @@ contract GenStaking {
     // modResult = SafeMath.mod(a,b);
 
     function version() public pure returns (string memory) {
-        return "0.0.2";
+        return "0.1.0";
     }
 
     // modifier to check if caller is manager
@@ -62,9 +62,9 @@ contract GenStaking {
         _;
     }
     
-    function changeManager(address newManager) public isManager {
-        emit ManagerSet(manager, newManager);
-        manager = newManager;
+    function changeManager(address _newManager) public isManager {
+        emit ManagerSet(manager, _newManager);
+        manager = _newManager;
     }
 
     function getManager() external view returns (address) {
@@ -73,9 +73,9 @@ contract GenStaking {
 
     receive() external payable {}
 
-    function setEpochTotalReward (uint256 amount) public isManager {
-        epochTotalReward = amount;
-        emit EpochUpdated(amount);
+    function setEpochTotalReward (uint256 _amount) public isManager {
+        epochTotalReward = _amount;
+        emit EpochUpdated(_amount);
     }
 
     function getEpochTotalReward() public view returns (uint256) {
@@ -102,13 +102,16 @@ contract GenStaking {
             
         if(isStaking[msg.sender] == true){
             uint256 toTransfer = calculateYieldTotal(msg.sender);
-            rewardBalance[msg.sender] += toTransfer;
+            // rewardBalance[msg.sender] += toTransfer;
+            rewardBalance[msg.sender] = SafeMath.add(rewardBalance[msg.sender], toTransfer);
         } else {
             addressLUT.push(msg.sender);
         }
 
         stGenToken.transferFrom(msg.sender, address(this), amount);
-        stakingBalance[msg.sender] += amount;
+        // stakingBalance[msg.sender] += amount;
+        stakingBalance[msg.sender] = SafeMath.add(stakingBalance[msg.sender], amount);
+
         startTime[msg.sender] = block.timestamp;
         isStaking[msg.sender] = true;
         emit Stake(msg.sender, amount);
@@ -132,9 +135,11 @@ contract GenStaking {
         startTime[msg.sender] = block.timestamp;
         uint256 balTransfer = amount;
         amount = 0;
-        stakingBalance[msg.sender] -= balTransfer;
+        // stakingBalance[msg.sender] -= balTransfer;
+        stakingBalance[msg.sender] = SafeMath.sub(stakingBalance[msg.sender], balTransfer);
         stGenToken.transfer(msg.sender, balTransfer);
-        rewardBalance[msg.sender] += yieldTransfer;
+        // rewardBalance[msg.sender] += yieldTransfer;
+        rewardBalance[msg.sender] = SafeMath.add(rewardBalance[msg.sender], yieldTransfer);
         if(stakingBalance[msg.sender] == 0){
             isStaking[msg.sender] = false;
             // TODO: addressLUT.pop(msg.sender); 필요
@@ -146,28 +151,37 @@ contract GenStaking {
 
     function calculateYieldTime(address user) public view returns(uint256){
         uint256 end = block.timestamp;
-        uint256 totalTime = end - startTime[user];
+        // uint256 totalTime = end - startTime[user];
+        uint256 totalTime = SafeMath.sub(end, startTime[user]);
         return totalTime;
     }
 
     function calculateYieldTotal(address user) public view returns(uint256) {
         uint256 time = calculateYieldTime(user) * 10**18;
         uint256 rate = 86400 * 7;
-        uint256 timeRate = time / rate;
+        // uint256 timeRate = time / rate;
+        uint256 timeRate = SafeMath.div(time, rate);
         
         // 리워드 계산(현재 epoch 에 할당된 총 리워드에서 (유저 staked)/(총 staked) 로 비율 계산한다(Epoch는 7일 단위).
         uint256 totalStaked = stGenToken.balanceOf(address(this));
-        uint256 rawYield = epochTotalReward * ( stakingBalance[user] * 10**18 / totalStaked ) * timeRate / 10**36;
+
+        // uint256 rawYield = epochTotalReward * ( stakingBalance[user] * 10**18 / totalStaked ) * timeRate / 10**36;
+        uint256 rateForStaking = SafeMath.div(stakingBalance[user] * 10**18, totalStaked);
+        uint256 rewardShare = SafeMath.mul(epochTotalReward, rateForStaking);
+        uint256 rawYield = SafeMath.mul(rewardShare, timeRate) / 10**36;
+
         return rawYield;
     }
 
     function calculateAllRewardBalance() public {
+        // save gas price
         address[] memory k = addressLUT;
         for (uint i = 0; i < size(); i++) {
             address user = k[i];
             if (isStaking[user] == true) {
                 uint256 toTransfer = calculateYieldTotal(user);
-                rewardBalance[user] += toTransfer;
+                // rewardBalance[user] += toTransfer;
+                rewardBalance[user] = SafeMath.add(rewardBalance[user], toTransfer);
                 startTime[user] = block.timestamp;
             }
         }
@@ -176,7 +190,8 @@ contract GenStaking {
     function getMyRewards(address user) public view returns(uint256) {
         uint256 toTransfer = calculateYieldTotal(user);
         uint256 oldBalance = rewardBalance[user];
-        toTransfer += oldBalance;
+        // toTransfer += oldBalance;
+        toTransfer = SafeMath.add(toTransfer, oldBalance);
         return toTransfer;
     }
 
@@ -192,7 +207,8 @@ contract GenStaking {
         if(rewardBalance[msg.sender] != 0){
             uint256 oldBalance = rewardBalance[msg.sender];
             rewardBalance[msg.sender] = 0;
-            toTransfer += oldBalance;
+            // toTransfer += oldBalance;
+            toTransfer = SafeMath.add(toTransfer, oldBalance);
         }
 
         startTime[msg.sender] = block.timestamp;
