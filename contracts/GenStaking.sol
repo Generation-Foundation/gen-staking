@@ -3,7 +3,7 @@ pragma solidity ^0.8.13;
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 
-contract GenStaking2 {
+contract GenStaking {
     using SafeERC20 for IERC20;
 
     mapping(address => uint256) public stakingBalance;
@@ -26,6 +26,8 @@ contract GenStaking2 {
 
     address public manager;
 
+    bool public feverStakingFlag;
+
     constructor(
         IERC20 _stGenToken,
         IERC20 _genToken
@@ -34,6 +36,8 @@ contract GenStaking2 {
             genToken = _genToken;
 
             manager = msg.sender;
+
+            feverStakingFlag = true;
         }
 
     // TODO: safemath로 바꾸기   
@@ -76,6 +80,15 @@ contract GenStaking2 {
 
     function getEpochTotalReward() public view returns (uint256) {
         return epochTotalReward;
+    }
+
+    function setFeverStakingFlag (bool _feverStakingFlag) public isManager {
+        feverStakingFlag = _feverStakingFlag;
+        emit FeverStakingFlagUpdated(_feverStakingFlag);
+    }
+
+    function getFeverStakingFlag() public view returns (bool) {
+        return feverStakingFlag;
     }
 
     function stake(uint256 amount) public {
@@ -204,6 +217,7 @@ contract GenStaking2 {
     /* ========== EVENTS ========== */
     event ManagerSet(address indexed oldManager, address indexed newManager);
     event EpochUpdated(uint256 reward);
+    event FeverStakingFlagUpdated(bool flag);
     event Stake(address indexed from, uint256 amount);
     event Unstake(address indexed from, uint256 amount);
     event YieldClaim(address indexed to, uint256 amount);
