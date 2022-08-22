@@ -10,6 +10,12 @@ contract GenStaking {
     mapping(address => bool) public isStaking;
     mapping(address => uint256) public startTime;
     mapping(address => uint256) public rewardBalance;
+    // stGen unstake pending 기록
+    // endTime 은 unstake 한 시점에 기록하고 가장 마지막 unstake 를 기록한다.
+    // 예를 들어, A유저가 10 stGEN을 unstake 하고 하루 뒤에 10 stGEN 을 unstake 했다면 110 stGEN은 10 stGEN을 unstake한 시점으로부터 7일 뒤에 출금할 수 있다.
+    mapping(address => bool) public isPending;
+    mapping(address => uint256) public endTime;
+    mapping(address => uint256) public stGenPendingBalance;
 
     address[] public addressLUT;
 
@@ -93,7 +99,7 @@ contract GenStaking {
 
     function stake(uint256 amount) public {
         // feverStakingFlag
-        require(feverStakingFlag, "Fever staking is off");
+        require(feverStakingFlag, "Fever staking is off.");
 
         require(
             amount > 0 &&
@@ -130,14 +136,34 @@ contract GenStaking {
 
         uint256 yieldTransfer = calculateYieldTotal(msg.sender);
 
-        // TODO: 7일간 pending 상태였다가 7일 후에 처리되어야함
-        
         startTime[msg.sender] = block.timestamp;
         uint256 balTransfer = amount;
         amount = 0;
         // stakingBalance[msg.sender] -= balTransfer;
         stakingBalance[msg.sender] = SafeMath.sub(stakingBalance[msg.sender], balTransfer);
-        stGenToken.transfer(msg.sender, balTransfer);
+        // stGenToken.transfer(msg.sender, balTransfer);
+
+        // TODO: stGenToken transfer는 7일간 pending 상태였다가 7일 후에 처리되어야함
+        isPending[msg.sender] = true;
+        endTime[msg.sender] = block.timestamp + 86400 * 7;
+        stGenPendingBalance[msg.sender] = balTransfer;
+        
+
+
+
+
+        
+
+
+
+
+
+
+
+
+        
+
+        // unstake 할 때 rewardBalance 에 지금까지 유저가 모아둔 reward를 정리해서 입력해야 unstake 이후 claim 할 때 그 리워드 출금이 가능...
         // rewardBalance[msg.sender] += yieldTransfer;
         rewardBalance[msg.sender] = SafeMath.add(rewardBalance[msg.sender], yieldTransfer);
         if(stakingBalance[msg.sender] == 0){
@@ -148,6 +174,40 @@ contract GenStaking {
 
         calculateAllRewardBalance();
     }
+
+    function withdrawUnstaking() public {
+    //     mapping(address => bool) public isPending;
+    // mapping(address => uint256) public endTime;
+    // mapping(address => uint256) public stGenPendingBalance;
+
+        require(
+                isPending[msg.sender] = true &&
+                stGenPendingBalance[msg.sender] > 0, 
+                "Nothing to withdraw"
+            );
+
+        uint256 current = block.timestamp;
+        require(endTime[msg.sender] > 0 && SafeMath.sub(current, endTime[msg.sender]) >= 86400 * 7, "Unstaking pending period is 7 days.");
+        
+        uint256 pendingTransfer = stGenPendingBalance[msg.sender];
+        stGenPendingBalance[msg.sender] = 0;
+        isPending[msg.sender] = false;
+        
+        stGenToken.transfer(msg.sender, pendingTransfer);
+        // 
+
+
+
+
+        
+
+    }
+
+    // function recoverERC20(address token, uint amount) public isManager {
+    //     require(token != address(stGenToken), "Cannot withdraw the staking token");
+    //     IERC20(token).safeTransfer(msg.sender, amount);
+    //     emit Recovered(token, amount);
+    // }
 
     function calculateYieldTime(address user) public view returns(uint256){
         uint256 end = block.timestamp;
