@@ -46,13 +46,6 @@ contract GenStaking {
             feverStakingFlag = true;
         }
 
-    // TODO: safemath로 바꾸기   
-    // addResult = SafeMath.add(a,b);
-    // subResult = SafeMath.sub(a,b);
-    // mulResult = SafeMath.mul(a,b);
-    // divResult = SafeMath.div(a,b);
-    // modResult = SafeMath.mod(a,b);
-
     function version() public pure returns (string memory) {
         return "0.1.0";
     }
@@ -148,21 +141,6 @@ contract GenStaking {
         endTime[msg.sender] = block.timestamp + 86400 * 7;
         stGenPendingBalance[msg.sender] = balTransfer;
         
-
-
-
-
-        
-
-
-
-
-
-
-
-
-        
-
         // unstake 할 때 rewardBalance 에 지금까지 유저가 모아둔 reward를 정리해서 입력해야 unstake 이후 claim 할 때 그 리워드 출금이 가능...
         // rewardBalance[msg.sender] += yieldTransfer;
         rewardBalance[msg.sender] = SafeMath.add(rewardBalance[msg.sender], yieldTransfer);
@@ -176,10 +154,6 @@ contract GenStaking {
     }
 
     function withdrawUnstaking() public {
-    //     mapping(address => bool) public isPending;
-    // mapping(address => uint256) public endTime;
-    // mapping(address => uint256) public stGenPendingBalance;
-
         require(
                 isPending[msg.sender] = true &&
                 stGenPendingBalance[msg.sender] > 0, 
@@ -187,27 +161,18 @@ contract GenStaking {
             );
 
         uint256 current = block.timestamp;
-        require(endTime[msg.sender] > 0 && SafeMath.sub(current, endTime[msg.sender]) >= 86400 * 7, "Unstaking pending period is 7 days.");
+        require(endTime[msg.sender] != 0, "Unstaking pending period is 7 days.");
+        require(SafeMath.sub(current, endTime[msg.sender]) >= 86400 * 7, "Unstaking pending period is 7 days.");
         
         uint256 pendingTransfer = stGenPendingBalance[msg.sender];
         stGenPendingBalance[msg.sender] = 0;
         isPending[msg.sender] = false;
+        endTime[msg.sender] = 0;
         
         stGenToken.transfer(msg.sender, pendingTransfer);
-        // 
 
-
-
-
-        
-
+        emit Withdraw(msg.sender, pendingTransfer);
     }
-
-    // function recoverERC20(address token, uint amount) public isManager {
-    //     require(token != address(stGenToken), "Cannot withdraw the staking token");
-    //     IERC20(token).safeTransfer(msg.sender, amount);
-    //     emit Recovered(token, amount);
-    // }
 
     function calculateYieldTime(address user) public view returns(uint256){
         uint256 end = block.timestamp;
@@ -304,4 +269,5 @@ contract GenStaking {
     event Unstake(address indexed from, uint256 amount);
     event YieldClaim(address indexed to, uint256 amount);
     event Recovered(address token, uint256 amount);
+    event Withdraw(address indexed to, uint256 amount);
 }
