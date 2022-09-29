@@ -139,7 +139,8 @@ contract GenStaking {
         // TODO: stGenToken transfer는 7일간 pending 상태였다가 7일 후에 처리되어야함
         isPending[msg.sender] = true;
         endTime[msg.sender] = block.timestamp + 86400 * 7;
-        stGenPendingBalance[msg.sender] = balTransfer;
+        // stGenPendingBalance[msg.sender] = balTransfer;
+        stGenPendingBalance[msg.sender] = SafeMath.add(stGenPendingBalance[msg.sender], balTransfer);
         
         // unstake 할 때 rewardBalance 에 지금까지 유저가 모아둔 reward를 정리해서 입력해야 unstake 이후 claim 할 때 그 리워드 출금이 가능...
         // rewardBalance[msg.sender] += yieldTransfer;
