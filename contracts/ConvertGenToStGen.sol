@@ -11,6 +11,8 @@ contract ConvertGenToStGen {
     IERC20 public stGenToken;
     IERC20 public genToken;
 
+    address constant public burnAddress = 0xFFfFfFffFFfffFFfFFfFFFFFffFFFffffFfFFFfF;
+
     event Convert(address indexed from, uint256 amount);
 
     address public manager;
@@ -25,15 +27,8 @@ contract ConvertGenToStGen {
             manager = msg.sender;
         }
 
-    // TODO: safemath로 바꾸기   
-    // addResult = SafeMath.add(a,b);
-    // subResult = SafeMath.sub(a,b);
-    // mulResult = SafeMath.mul(a,b);
-    // divResult = SafeMath.div(a,b);
-    // modResult = SafeMath.mod(a,b);
-
     function version() public pure returns (string memory) {
-        return "0.0.1";
+        return "0.2.0";
     }
 
     // event for EVM logging
@@ -70,7 +65,9 @@ contract ConvertGenToStGen {
             
         // GEN 이동
         // TODO: burn 주소로 이동해야함
-        genToken.transferFrom(msg.sender, address(this), amount);
+        // genToken.transferFrom(msg.sender, address(this), amount);
+        genToken.transferFrom(msg.sender, burnAddress, amount);
+        
         // stGEN 이동
         uint256 stGenAmount = SafeMath.div(amount, 100);
         stGenToken.safeTransfer(msg.sender, stGenAmount);
