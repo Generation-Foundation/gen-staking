@@ -18,14 +18,18 @@ contract GateKeeperStaking is Ownable {
     // 5% -> 500:10000
     uint256 public apr = 500;
 
+    bool public stakingFlag;
+
     constructor(IERC20 _stakingToken, IERC20 _rewardToken) {
         stakingToken = _stakingToken;
         rewardToken = _rewardToken;
+
+        stakingFlag = true;
     }
 
     function stake(uint256 amount) external {
         require(amount > 0, "amount is <= 0");
-        
+
         stakingToken.transferFrom(msg.sender, address(this), amount);
 
         if (staked[msg.sender] > 0) {
@@ -33,6 +37,8 @@ contract GateKeeperStaking is Ownable {
         }
         stakedFromTS[msg.sender] = block.timestamp;
         staked[msg.sender] += amount;
+
+        emit Stake(msg.sender, amount);
     }
 
     function unstake(uint256 amount) external {
@@ -42,6 +48,8 @@ contract GateKeeperStaking is Ownable {
         staked[msg.sender] -= amount;
 
         stakingToken.safeTransfer(msg.sender, amount);
+
+        emit Unstake(msg.sender, amount);
     }
 
     function claim() public {
@@ -55,6 +63,8 @@ contract GateKeeperStaking is Ownable {
         stakedFromTS[msg.sender] = block.timestamp;
 
         rewardToken.safeTransfer(msg.sender, rewards);
+
+        emit Claim(msg.sender, rewards);
     }
 
     function estimateReward() public view returns (uint256) {
@@ -71,6 +81,15 @@ contract GateKeeperStaking is Ownable {
         apr = _apr;
     }
 
+    function setStakingFlag (bool _stakingFlag) public onlyOwner {
+        stakingFlag = _stakingFlag;
+        emit StakingFlagUpdated(stakingFlag);
+    }
+
+    function getStakingFlag() public view returns (bool) {
+        return stakingFlag;
+    }
+
     function recoverERC20(address token, uint amount) public onlyOwner {
         IERC20(token).safeTransfer(msg.sender, amount);
         emit Recovered(token, amount);
@@ -82,5 +101,8 @@ contract GateKeeperStaking is Ownable {
 
     /* ========== EVENTS ========== */
     event Recovered(address token, uint256 amount);
-    // TODO: Stake, Unstake, Claim
+    event StakingFlagUpdated(bool flag);
+    event Stake(address indexed from, uint256 amount);
+    event Unstake(address indexed from, uint256 amount);
+    event Claim(address indexed to, uint256 amount);
 }
