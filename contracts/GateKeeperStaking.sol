@@ -18,6 +18,9 @@ contract GateKeeperStaking is Ownable {
     // 5% -> 500:10000
     uint256 public apr = 500;
 
+    // 전체 게이트키퍼의 스테이킹 총량
+    uint256 public totalStaked;
+
     bool public stakingFlag;
 
     constructor(IERC20 _stakingToken, IERC20 _rewardToken) {
@@ -37,6 +40,7 @@ contract GateKeeperStaking is Ownable {
         }
         stakedFromTS[msg.sender] = block.timestamp;
         staked[msg.sender] += amount;
+        totalStaked += amount;
 
         emit Stake(msg.sender, amount);
     }
@@ -48,6 +52,7 @@ contract GateKeeperStaking is Ownable {
         staked[msg.sender] -= amount;
 
         stakingToken.safeTransfer(msg.sender, amount);
+        totalStaked -= amount;
 
         emit Unstake(msg.sender, amount);
     }
