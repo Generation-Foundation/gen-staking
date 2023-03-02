@@ -12,11 +12,11 @@ contract GateKeeperStaking is Ownable {
     mapping(address => uint256) public staked;
     mapping(address => uint256) private stakedFromTS;
 
-    IERC20 public stakingToken;
-    IERC20 public rewardToken;
+    IERC20 public immutable stakingToken;
+    IERC20 public immutable rewardToken;
 
-    // 5% -> 500:10000
-    uint256 public apr = 500;
+    // 500 -> 5%, 10000 -> 100%
+    uint16 public apr = 500;
 
     // 전체 게이트키퍼의 스테이킹 총량
     uint256 public totalStaked;
@@ -30,7 +30,7 @@ contract GateKeeperStaking is Ownable {
         stakingFlag = true;
     }
 
-    function stake(uint256 amount) external {
+    function stake(uint256 amount) public {
         require(amount > 0, "amount is <= 0");
 
         stakingToken.transferFrom(msg.sender, address(this), amount);
@@ -39,21 +39,20 @@ contract GateKeeperStaking is Ownable {
             claim();
         }
         stakedFromTS[msg.sender] = block.timestamp;
-        staked[msg.sender] += amount;
-        totalStaked += amount;
-
+        staked[msg.sender] = SafeMath.add(staked[msg.sender], amount);
+        totalStaked = SafeMath.add(totalStaked, amount);
+        
         emit Stake(msg.sender, amount);
     }
 
-    function unstake(uint256 amount) external {
+    function unstake(uint256 amount) public {
         require(amount > 0, "amount is <= 0");
         require(staked[msg.sender] >= amount, "amount is > staked");
         claim();
-        staked[msg.sender] -= amount;
-
+        staked[msg.sender] = SafeMath.sub(staked[msg.sender], amount);
+        totalStaked = SafeMath.sub(totalStaked, amount);
         stakingToken.safeTransfer(msg.sender, amount);
-        totalStaked -= amount;
-
+        
         emit Unstake(msg.sender, amount);
     }
 
@@ -73,7 +72,7 @@ contract GateKeeperStaking is Ownable {
     }
 
     function estimateReward() public view returns (uint256) {
-        require(staked[msg.sender] > 0, "staked is <= 0");
+        // require(staked[msg.sender] > 0, "staked is <= 0");
         uint256 secondsStaked = block.timestamp - stakedFromTS[msg.sender];
         uint256 rewardsYear = staked[msg.sender] * secondsStaked / 3.154e7;
         uint256 tempReward = SafeMath.mul(rewardsYear, apr);
@@ -81,7 +80,7 @@ contract GateKeeperStaking is Ownable {
         return rewards;
     }
 
-    function setApr(uint256 _apr) public onlyOwner {
+    function setApr(uint16 _apr) public onlyOwner {
         require(_apr > 0 && _apr <= 10000, "Invalid APR(_apr > 0 && _apr <= 10000, 10000 == 100%)");
         apr = _apr;
     }
@@ -95,7 +94,7 @@ contract GateKeeperStaking is Ownable {
         return stakingFlag;
     }
 
-    function recoverERC20(address token, uint amount) public onlyOwner {
+    function recoverERC20(address token, uint256 amount) public onlyOwner {
         IERC20(token).safeTransfer(msg.sender, amount);
         emit Recovered(token, amount);
     }
