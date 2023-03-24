@@ -18,6 +18,8 @@ contract GateKeeperStaking is Ownable {
     // 500 -> 5%, 10000 -> 100%
     uint16 public apr = 500;
 
+    uint constant SECONDS_PER_DAY = 24 * 60 * 60;
+
     // 전체 게이트키퍼의 스테이킹 총량
     uint256 public totalStaked;
 
@@ -76,6 +78,12 @@ contract GateKeeperStaking is Ownable {
     // 
     function withdraw(uint256 idx) public {
         require(!withdrawList[idx].completed, "completed must be false.");
+
+        uint256 current = block.timestamp;
+        require(withdrawList[idx].timestamp > 0, "Invalid withdrawList[idx].timestamp");
+        // Unstaking 기간: 7일
+        require(SafeMath.sub(current, withdrawList[idx].timestamp) >= SECONDS_PER_DAY * 7, "Unstaking pending period is 7 days.");
+
         withdrawList[idx].completed = true;
         stakingToken.safeTransfer(withdrawList[idx].userAccount, withdrawList[idx].amount);
 
