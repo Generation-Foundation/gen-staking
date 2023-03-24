@@ -23,6 +23,17 @@ contract GateKeeperStaking is Ownable {
 
     bool public stakingFlag;
 
+    // withdraw 용(유저 주소, amount, timestamp)
+    // token 은 stakingToken 으로 고정
+    struct WithdrawToken {
+        address userAccount;
+        uint256 amount;
+        uint256 timestamp;
+        bool completed;
+    }
+
+    WithdrawToken[] withdrawList;
+
     constructor(IERC20 _stakingToken, IERC20 _rewardToken) {
         stakingToken = _stakingToken;
         rewardToken = _rewardToken;
@@ -31,7 +42,7 @@ contract GateKeeperStaking is Ownable {
     }
 
     function stake(uint256 amount) public {
-        require(amount > 0, "amount is <= 0");
+        require(amount > 0, "amount is < 0");
 
         stakingToken.transferFrom(msg.sender, address(this), amount);
 
@@ -51,9 +62,24 @@ contract GateKeeperStaking is Ownable {
         claim();
         staked[msg.sender] = SafeMath.sub(staked[msg.sender], amount);
         totalStaked = SafeMath.sub(totalStaked, amount);
-        stakingToken.safeTransfer(msg.sender, amount);
+        // stakingToken.safeTransfer(msg.sender, amount);
+
+        // 7d delay 작업 필요
+        // 1) unstake와 withdraw 분리. unstake
+        // 2) unstake 하면 withdrawMap 에 유저 주소, amount, timestamp 를 push
+
+        withdrawList.push(WithdrawToken(msg.sender, amount, block.timestamp, false));
         
         emit Unstake(msg.sender, amount);
+    }
+
+    // 
+    function withdraw(uint256 idx) public {
+        require(!withdrawList[idx].completed, "completed must be false.");
+        withdrawList[idx].completed = true;
+        stakingToken.safeTransfer(withdrawList[idx].userAccount, withdrawList[idx].amount);
+
+        emit Withdraw(withdrawList[idx].userAccount, withdrawList[idx].amount);
     }
 
     function claim() public {
@@ -108,5 +134,6 @@ contract GateKeeperStaking is Ownable {
     event StakingFlagUpdated(bool flag);
     event Stake(address indexed from, uint256 amount);
     event Unstake(address indexed from, uint256 amount);
+    event Withdraw(address indexed from, uint256 amount);
     event Claim(address indexed to, uint256 amount);
 }
