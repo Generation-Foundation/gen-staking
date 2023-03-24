@@ -18,10 +18,23 @@ contract GateKeeperStaking is Ownable {
     // 500 -> 5%, 10000 -> 100%
     uint16 public apr = 500;
 
+    uint constant SECONDS_PER_DAY = 24 * 60 * 60;
+
     // 전체 게이트키퍼의 스테이킹 총량
     uint256 public totalStaked;
 
     bool public stakingFlag;
+
+    // withdraw 용(유저 주소, amount, timestamp)
+    // token 은 stakingToken 으로 고정
+    struct WithdrawToken {
+        address userAccount;
+        uint256 amount;
+        uint256 timestamp;
+        bool completed;
+    }
+
+    WithdrawToken[] withdrawList;
 
     constructor(IERC20 _stakingToken, IERC20 _rewardToken) {
         stakingToken = _stakingToken;
@@ -51,9 +64,30 @@ contract GateKeeperStaking is Ownable {
         claim();
         staked[msg.sender] = SafeMath.sub(staked[msg.sender], amount);
         totalStaked = SafeMath.sub(totalStaked, amount);
-        stakingToken.safeTransfer(msg.sender, amount);
+        // stakingToken.safeTransfer(msg.sender, amount);
 
+        // 7d delay 작업 필요
+        // 1) unstake와 withdraw 분리. unstake
+        // 2) unstake 하면 withdrawMap 에 유저 주소, amount, timestamp 를 push
+
+        withdrawList.push(WithdrawToken(msg.sender, amount, block.timestamp, false));
+        
         emit Unstake(msg.sender, amount);
+    }
+
+    // 
+    function withdraw(uint256 idx) public {
+        require(!withdrawList[idx].completed, "completed must be false.");
+
+        uint256 current = block.timestamp;
+        require(withdrawList[idx].timestamp > 0, "Invalid withdrawList[idx].timestamp");
+        // Unstaking 기간: 7일
+        require(SafeMath.sub(current, withdrawList[idx].timestamp) >= SECONDS_PER_DAY * 7, "Unstaking pending period is 7 days.");
+
+        withdrawList[idx].completed = true;
+        stakingToken.safeTransfer(withdrawList[idx].userAccount, withdrawList[idx].amount);
+
+        emit Withdraw(withdrawList[idx].userAccount, withdrawList[idx].amount);
     }
 
     function claim() public {
@@ -108,5 +142,6 @@ contract GateKeeperStaking is Ownable {
     event StakingFlagUpdated(bool flag);
     event Stake(address indexed from, uint256 amount);
     event Unstake(address indexed from, uint256 amount);
+    event Withdraw(address indexed from, uint256 amount);
     event Claim(address indexed to, uint256 amount);
 }
