@@ -9,9 +9,7 @@ interface GenStakingInterface {
     function getStakedAmount(address userAddress) external view returns (uint256);
 }
 
-contract GateKeeperStaking is Ownable {
-    // GenStakingInterface IGenStakingContract;
-
+contract Staking is Ownable {
     using SafeERC20 for IERC20;
 
     mapping(address => uint256) public staked;
