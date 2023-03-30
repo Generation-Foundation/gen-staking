@@ -55,11 +55,11 @@ contract ConvertGenToStGen {
     }
 
     receive() external payable {}
-
+    
     function convertGen(uint256 amount) public {
         // 100:1 = GEN:stGEN
         require(
-            amount > 0 &&
+            amount >= 100 &&
             genToken.balanceOf(msg.sender) >= amount, 
             "You cannot convert zero tokens");
             
