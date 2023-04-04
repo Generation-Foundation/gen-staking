@@ -21,7 +21,7 @@ contract Staking is Ownable {
     // 10000 -> 100%, 498 -> 4.98%, 500 -> 5%, 
     // 400000 -> 4000%, 390715 -> 3907.15 %
     // 0 ~ 4294967296
-    uint32 public apr = 498;
+    uint32 public apr = 390777;
 
     // Fever Staking을 위한 최소 GEN Staking 조건
     uint256 public minimumGenStaked = 100000000000000000000;
@@ -117,7 +117,7 @@ contract Staking is Ownable {
         emit Claim(msg.sender, rewards);
     }
 
-    function estimateReward() onlyGateKeeper public view returns (uint256) {
+    function estimateReward() public view returns (uint256) {
         uint256 secondsStaked = block.timestamp - stakedFromTS[msg.sender];
         uint256 rewardsYear = staked[msg.sender] * secondsStaked / 3.154e7;
         uint256 tempReward = SafeMath.mul(rewardsYear, apr);
