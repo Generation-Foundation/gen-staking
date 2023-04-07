@@ -1,5 +1,9 @@
-# gen-staking
+# Staking for Timelockers
 GEN Gate Keeper Staking &amp; Fever Staking Contracts
 
-### Screenshot
-![스크린샷 2022-08-19 오후 1 05 27](https://user-images.githubusercontent.com/34641838/185543479-dae06919-537f-4fa1-94f6-9152b05d2cf7.png)
+![Staking](https://user-images.githubusercontent.com/34641838/230521331-e7ed7edc-9b37-44a0-b3f4-4a9200494730.png)
+
+This repository provides a GEN and Fever staking mechanism; whereby, the user receives GEN as a reward for staking GEN or stGEN in the contract.
+
+- Staking guide can be found in [here](https://whitepaper.gen.foundation/product/timelockers/staking).
+
