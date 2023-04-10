@@ -1,5 +1,5 @@
 # Staking Contracts for Timelockers
-GEN Gate Keeper Staking &amp; Fever Staking Contracts
+GEN &amp; Fever Staking Contracts
 
 ![Staking](https://user-images.githubusercontent.com/34641838/230521331-e7ed7edc-9b37-44a0-b3f4-4a9200494730.png)
 
